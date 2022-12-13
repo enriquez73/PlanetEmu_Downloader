@@ -39,10 +39,12 @@ class PlanetemuSpider(object):
         sopa = suop(url=_web + _url)
         tags = sopa('a')
         self.pages = []
+        self.skipped = []
         for tag in tags:
             href = tag.get('href', None)
             if href and href.startswith(_url + '?page='):
-                self.pages.append(href)
+                if href not in self.pages:
+                    self.pages.append(href)
 
     def get_games(self, prefix):
         for page in self.pages:
@@ -50,16 +52,26 @@ class PlanetemuSpider(object):
             games = get_games_in_page(self.base_url, page, prefix)
             games_number = len(games)
             for idx, g in enumerate(games):
-                # print(f'[{page_name}-{idx}] - {g}')
-                self.download_game(g, idx, games_number, page_name)
-                time.sleep(SLEEP_TIME)
+                res = self.download_game(g, idx, games_number, page_name)
+                if not res:
+                    break
+
+    def download_skipped_games(self):
+        index = 0
+        games_number = len(self.skipped)
+        while len(self.skipped) > 0:
+            game_url = self.skipped.pop()
+            self.download_game(game_url, index, games_number, 'skipped')
+            index += 1
 
     def download_game(self, game_url, idx, games_number, page_name=''):
         dest_path = os.path.join(self.rom_name, page_name)
+        fname = ''
         try:
             create_directory(dest_path)
             s = Soup()
-            sopa = s(url=urljoin(self.base_url, game_url))
+            download_url = urljoin(self.base_url, game_url)
+            sopa = s(url=download_url)
             action = sopa.find('form', {'name': 'MyForm'}).get('action')
             _id = sopa.find('input', {'name': 'id'}).get('value')
             download = sopa.find('input', {'name': 'download'}).get('value')
@@ -93,13 +105,14 @@ class PlanetemuSpider(object):
                             unit='iB',
                             unit_scale=True,
                             unit_divisor=1024,
+                            ncols=75,
                     ) as bar:
                         for data in response.iter_content(chunk_size=1024):
                             size = file.write(data)
                             bar.update(size)
                 else:
-                    print('Skipping: [{}{:03d}-{:03d}] - {}: Already downloaded'.format(page_name, idx, games_number,
-                                                                                        name))
+                    print(f'Skipping: [{page_name} - {idx:03d}-{games_number:03d}] - {name}: Already downloaded')
+                return True
         except KeyboardInterrupt:
             if fname:
                 os.remove(fname)
@@ -107,7 +120,10 @@ class PlanetemuSpider(object):
         except Exception as e:
             if fname:
                 os.remove(fname)
-            print(f': ERROR {e}')
+            print(f'Skipping: ERROR {e}')
+            if download_url not in self.skipped:
+                self.skipped.append(download_url)
+            return True
 
     # def __call__(self, _web, _url, _sufijo, path):
     #     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
