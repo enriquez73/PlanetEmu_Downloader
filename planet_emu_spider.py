@@ -7,6 +7,8 @@ import urllib3
 from tqdm import tqdm
 from utils import Soup, urljoin
 
+SLEEP_TIME = 0.5
+
 
 def get_games_in_page(_web, page_url, prefix):
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -28,6 +30,7 @@ def create_directory(path):
 
 class PlanetemuSpider(object):
     def __init__(self, _web, _url, rom_name):
+        print('Initializing spider for %s' % rom_name)
         self.base_url = _web
         self.rom_name = rom_name
         create_directory(self.rom_name)
@@ -49,7 +52,7 @@ class PlanetemuSpider(object):
             for idx, g in enumerate(games):
                 # print(f'[{page_name}-{idx}] - {g}')
                 self.download_game(g, idx, games_number, page_name)
-                time.sleep(1.5)
+                time.sleep(SLEEP_TIME)
 
     def download_game(self, game_url, idx, games_number, page_name=''):
         dest_path = os.path.join(self.rom_name, page_name)
@@ -82,8 +85,8 @@ class PlanetemuSpider(object):
                 fname = os.path.join(dest_path, name)
                 if not os.path.isfile(fname):
                     total = int(response.headers.get('content-length', 0))
-                    # Can also replace 'file' with a io.BytesIO object
-                    description = 'Downloading: [{:03d}-{:03d}] - ({}){}'.format(idx, games_number, game_url, name)
+                    # Can also replace 'file' with an io.BytesIO object
+                    description = 'Downloading: [{}{:03d}-{:03d}] - {}'.format(page_name, idx, games_number, name)
                     with open(fname, 'wb') as file, tqdm(
                             desc=description,
                             total=total,
@@ -94,6 +97,9 @@ class PlanetemuSpider(object):
                         for data in response.iter_content(chunk_size=1024):
                             size = file.write(data)
                             bar.update(size)
+                else:
+                    print('Skipping: [{}{:03d}-{:03d}] - {}: Already downloaded'.format(page_name, idx, games_number,
+                                                                                        name))
         except KeyboardInterrupt:
             if fname:
                 os.remove(fname)

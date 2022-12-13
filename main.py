@@ -48,13 +48,11 @@ class DownloadProgressBar(tqdm):
 if __name__ == '__main__':
     web = 'https://www.planetemu.net'
 
-    for rom in PLANETEMU:
+    print(f'Downloading from {web} ...')
 
+    for rom in PLANETEMU:
+        print(f'Downloading Roms for {rom} ...')
         url = f'/roms/{rom}'
         prefix = f'/rom/{rom}'
         spider = PlanetemuSpider(web, url, rom)
         spider.get_games(prefix)
-        print(spider.pages)
-
-        # if not spider(web, url, sufijo, rom):
-        #     break

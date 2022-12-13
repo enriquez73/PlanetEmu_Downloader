@@ -17,6 +17,7 @@ class Soup(object):
     def __call__(self, *args, **kwargs):
         _url = kwargs.get('url')
 
+        # print('Requesting url: %s' % _url)
         # Ignora error de certificado SSL
         ctx = ssl.create_default_context()
         ctx.check_hostname = False
@@ -24,4 +25,5 @@ class Soup(object):
 
         # html = urllib.request.urlopen(_url, context=ctx).read()
         html = requests.get(_url)
+        # print(f'Requested url: {_url}')
         return BeautifulSoup(html.content, 'html.parser')
