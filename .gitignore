@@ -1,2 +1,3 @@
 /mame-roms/
 /.venv/
+__pycache__/
