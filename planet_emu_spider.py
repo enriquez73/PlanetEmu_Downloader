@@ -7,7 +7,7 @@ import urllib3
 from tqdm import tqdm
 from utils import Soup, urljoin
 
-SLEEP_TIME = 0.5
+SLEEP_TIME = 1.5
 
 
 def get_games_in_page(_web, page_url, prefix):
@@ -26,6 +26,10 @@ def get_games_in_page(_web, page_url, prefix):
 def create_directory(path):
     if not os.path.isdir(path):
         os.mkdir(path)
+
+
+def get_files_in_directory(path):
+    return os.listdir(path)
 
 
 class PlanetemuSpider(object):
@@ -51,10 +55,17 @@ class PlanetemuSpider(object):
             page_name = page.split('=')[1]
             games = get_games_in_page(self.base_url, page, prefix)
             games_number = len(games)
+            dest_path = os.path.join(self.rom_name, page_name)
+            games_in_dir = get_files_in_directory(dest_path)
+
             for idx, g in enumerate(games):
-                res = self.download_game(g, idx, games_number, page_name)
-                if not res:
-                    break
+                file_name = g.split('/')[-1] + '.zip'
+                if file_name not in games_in_dir:
+                    res = self.download_game(g, idx, games_number, page_name)
+                    if not res:
+                        break
+                else:
+                    print(f'Skipping {file_name}: already present in {dest_path}')
 
     def download_skipped_games(self):
         index = 0
@@ -98,7 +109,7 @@ class PlanetemuSpider(object):
                 if not os.path.isfile(fname):
                     total = int(response.headers.get('content-length', 0))
                     # Can also replace 'file' with an io.BytesIO object
-                    description = 'Downloading: [{}{:03d}-{:03d}] - {}'.format(page_name, idx, games_number, name)
+                    description = f'Downloading: [{page_name} - {idx:03d}-{games_number:03d}] - {name:15s}:'
                     with open(fname, 'wb') as file, tqdm(
                             desc=description,
                             total=total,
@@ -106,12 +117,13 @@ class PlanetemuSpider(object):
                             unit_scale=True,
                             unit_divisor=1024,
                             ncols=75,
+                            nrows=2,
                     ) as bar:
                         for data in response.iter_content(chunk_size=1024):
                             size = file.write(data)
                             bar.update(size)
                 else:
-                    print(f'Skipping: [{page_name} - {idx:03d}-{games_number:03d}] - {name}: Already downloaded')
+                    print(f'Skipping: [{page_name} - {idx:03d}-{games_number:03d}] - {name:15s}: Already downloaded')
                 return True
         except KeyboardInterrupt:
             if fname:
