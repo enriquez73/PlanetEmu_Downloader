@@ -10,15 +10,15 @@ class FtpUploadTracker:
         self.total_size = total_size
         self.filename = filename
         self.bar = tqdm(
-            desc=f'Uploading {filename}',
+            desc=f'Uploading {filename[:30]}[...]',
             total=total_size,
             unit='iB',
             unit_scale=True,
             unit_divisor=1024,
+            colour='green'
             #  ncols=120,
-            nrows=2,
+            # nrows=2,
         )
-        print('')
 
     def __exit__(self):
         self.bar.close()
