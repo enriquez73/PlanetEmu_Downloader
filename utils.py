@@ -1,7 +1,10 @@
 import ssl
 
 import requests
+import os
 from bs4 import BeautifulSoup
+
+BASE_DIR = os.path.join('.', 'ROMS')
 
 
 def urljoin(*args):
@@ -11,6 +14,10 @@ def urljoin(*args):
     """
 
     return "/".join(map(lambda x: str(x.lstrip('/')).rstrip('/'), args))
+
+
+def get_files_in_directory(path):
+    return os.listdir(path)
 
 
 class Soup(object):

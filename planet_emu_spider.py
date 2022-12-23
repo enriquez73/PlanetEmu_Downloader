@@ -5,9 +5,12 @@ import time
 import requests
 import urllib3
 from tqdm import tqdm
-from utils import Soup, urljoin
+
+import utils as u
+from utils import Soup, urljoin, get_files_in_directory
 
 SLEEP_TIME = 1.5
+BASE_DIR = u.BASE_DIR
 
 
 def get_games_in_page(_web, page_url, prefix):
@@ -26,10 +29,6 @@ def get_games_in_page(_web, page_url, prefix):
 def create_directory(path):
     if not os.path.isdir(path):
         os.mkdir(path)
-
-
-def get_files_in_directory(path):
-    return os.listdir(path)
 
 
 class PlanetemuSpider(object):
@@ -55,17 +54,20 @@ class PlanetemuSpider(object):
             page_name = page.split('=')[1]
             games = get_games_in_page(self.base_url, page, prefix)
             games_number = len(games)
-            dest_path = os.path.join(self.rom_name, page_name)
+            dest_path = os.path.join(BASE_DIR, self.rom_name, page_name)
+            create_directory(dest_path)
+
             games_in_dir = get_files_in_directory(dest_path)
 
             for idx, g in enumerate(games):
                 file_name = g.split('/')[-1] + '.zip'
                 if file_name not in games_in_dir:
                     res = self.download_game(g, idx, games_number, page_name)
+                    time.sleep(SLEEP_TIME)
                     if not res:
                         break
                 else:
-                    print(f'Skipping {file_name}: already present in {dest_path}')
+                    print(f'Skipping {str(file_name)}: already present in {dest_path}')
 
     def download_skipped_games(self):
         index = 0
@@ -76,10 +78,9 @@ class PlanetemuSpider(object):
             index += 1
 
     def download_game(self, game_url, idx, games_number, page_name=''):
-        dest_path = os.path.join(self.rom_name, page_name)
+        dest_path = os.path.join(BASE_DIR, self.rom_name, page_name)
         fname = ''
         try:
-            create_directory(dest_path)
             s = Soup()
             download_url = urljoin(self.base_url, game_url)
             sopa = s(url=download_url)
@@ -106,24 +107,7 @@ class PlanetemuSpider(object):
                     name = game_url.split('/')[-1] + '.zip'
 
                 fname = os.path.join(dest_path, name)
-                if not os.path.isfile(fname):
-                    total = int(response.headers.get('content-length', 0))
-                    # Can also replace 'file' with an io.BytesIO object
-                    description = f'Downloading: [{page_name} - {idx:03d}-{games_number:03d}] - {name:15s}:'
-                    with open(fname, 'wb') as file, tqdm(
-                            desc=description,
-                            total=total,
-                            unit='iB',
-                            unit_scale=True,
-                            unit_divisor=1024,
-                            ncols=75,
-                            nrows=2,
-                    ) as bar:
-                        for data in response.iter_content(chunk_size=1024):
-                            size = file.write(data)
-                            bar.update(size)
-                else:
-                    print(f'Skipping: [{page_name} - {idx:03d}-{games_number:03d}] - {name:15s}: Already downloaded')
+                self.download_write(fname, games_number, idx, name, page_name, response)
                 return True
         except KeyboardInterrupt:
             if fname:
@@ -136,6 +120,26 @@ class PlanetemuSpider(object):
             if download_url not in self.skipped:
                 self.skipped.append(download_url)
             return True
+
+    def download_write(self, fname, games_number, idx, name, page_name, response):
+        if not os.path.isfile(fname):
+            total = int(response.headers.get('content-length', 0))
+            # Can also replace 'file' with an io.BytesIO object
+            description = f'[({page_name}) - {idx:04d}/{games_number:04d}] - {name:20s}'
+            with open(fname, 'wb') as file, tqdm(
+                    desc=description,
+                    total=total,
+                    unit='iB',
+                    unit_scale=True,
+                    unit_divisor=1024,
+                    #  ncols=120,
+                    nrows=2,
+            ) as bar:
+                for data in response.iter_content(chunk_size=1024):
+                    size = file.write(data)
+                    bar.update(size)
+        else:
+            print(f'Skipping: [{page_name} - {idx:03d}-{games_number:03d}] - {name:15s}: Already downloaded')
 
     # def __call__(self, _web, _url, _sufijo, path):
     #     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)

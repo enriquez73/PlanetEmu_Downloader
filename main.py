@@ -1,6 +1,8 @@
 from planet_emu_spider import PlanetemuSpider
 
 PLANETEMU = [
+    'commodore-amiga-hardfiles-hdf',
+    'commodore-amiga-games-adf',
     # 'atari-2600',
     # 'atari-5200',
     # 'atari-7800',
@@ -13,6 +15,7 @@ PLANETEMU = [
     # 'sega-mega-drive',
     # 'snk-neo-geo-pocket',
     # 'snk-neo-geo-cd-world',
+    'nintendo-nintendo-entertainment-system',
     'mame-roms',
     # 'nec-pc-engine',
     # 'sony-playstation-games-europe',

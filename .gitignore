@@ -1,3 +1,7 @@
-/mame-roms/
+/ROMS/
 /.venv/
+/.idea/
 __pycache__/
+/.idea/sonarlint/issuestore/index.pb
+/log.txt
+*.ini
