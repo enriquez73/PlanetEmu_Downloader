@@ -28,7 +28,7 @@ def get_games_in_page(_web, page_url, prefix):
 
 def create_directory(path):
     if not os.path.isdir(path):
-        os.mkdir(path)
+        os.makedirs(path)
 
 
 class PlanetemuSpider(object):
@@ -36,7 +36,7 @@ class PlanetemuSpider(object):
         print('Initializing spider for %s' % rom_name)
         self.base_url = _web
         self.rom_name = rom_name
-        create_directory(self.rom_name)
+        create_directory(u.urljoin(BASE_DIR, self.rom_name))
         urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
         suop = Soup()
         sopa = suop(url=_web + _url)
