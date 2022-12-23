@@ -139,8 +139,10 @@ class FtpUtils:
     def upload(self, target_path):
         for file in target_path.iterdir():
             if file.is_dir():
-                remote_tmp = str(file.absolute()).replace(str(self.current_local_path.absolute()) + '\\', '')
-                remote_tmp = str(os.path.join(self.remote_dir, remote_tmp)).replace('\\', '/')
+                remote_tmp = str(file.absolute()).replace(str(self.current_local_path.absolute()), '')
+                if remote_tmp.startswith('\\') or remote_tmp.startswith('/'):
+                    remote_tmp = remote_tmp[1:]
+                remote_tmp = str(os.path.join(self.remote_dir, remote_tmp))
                 result = self.check_or_create_remote_dir(remote_tmp)
                 print(result)
                 self.upload(file)

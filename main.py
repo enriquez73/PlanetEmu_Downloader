@@ -1,7 +1,14 @@
-from planet_emu_spider import PlanetemuSpider
 import click
 
+from planet_emu_spider import PlanetemuSpider
+from enum import Enum
+
+
 WEB = 'https://www.planetemu.net'
+class Planet(Enum):
+    A = 'nintendo-nintendo-entertainment-system'
+    B = 'mame-roms'
+
 PLANETEMU = [
     # 'commodore-amiga-hardfiles-hdf',
     # 'commodore-amiga-games-adf',
@@ -33,18 +40,21 @@ def run_spider(rom):
     spider.get_games(prefix)
     spider.download_skipped_games()
 
+_prompt = f'Roms: \n{Planet.A.name} - {Planet.A.value}\n{Planet.B.name} - {Planet.B.value}\n'
 
 @click.command()
 @click.option(
-    "--rom", prompt="Local or remote",
+    "--rom", prompt=_prompt,
     help="Where to upload files.",
     type=click.Choice(
-        PLANETEMU,
+        [Planet.A.name, Planet.B.name],
         case_sensitive=False)
 )
 def destination_choice(rom):
     click.echo(rom)
-    run_spider(rom)
+    choosed = Planet[rom].value
+    print(choosed)
+    run_spider(choosed)
 
 
 if __name__ == '__main__':
