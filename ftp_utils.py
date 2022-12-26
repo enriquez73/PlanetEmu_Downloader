@@ -134,7 +134,7 @@ class FtpUtils:
 
     def close_session(self):
         self.session.close()
-        self.session.quit()
+        # self.session.quit()
 
     def upload(self, target_path):
         for file in target_path.iterdir():
