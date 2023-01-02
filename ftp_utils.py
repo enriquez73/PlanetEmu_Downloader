@@ -1,23 +1,25 @@
-import click
+import json
 import os
-# import time
+import posixpath
+
+import click
+
 from datetime import datetime
 from ftplib import FTP
 from pathlib import Path
-from configparser import ConfigParser
 from dateutil import parser
-from tqdm import tqdm
 
-import utils as u
 from ftp_upload_tracker import FtpUploadTracker
-from utils import get_files_in_directory
+import utils as u
 
 
 class FtpUtils:
     def __init__(self, destination):
-        config_object = ConfigParser()
-        config_object.read(destination)
-        ftp_config = config_object['FTP']
+
+        with open(destination, 'r') as f:
+            ftp_config = json.load(f)
+
+        ftp_config = ftp_config['FTP']
 
         self.ftp_url = ftp_config['FTP_URL']
         self.ftp_username = ftp_config['FTP_USER']
@@ -136,18 +138,21 @@ class FtpUtils:
         self.session.close()
         # self.session.quit()
 
+    def destination_path(self, current_file):
+        remote_tmp = str(current_file.absolute()).replace(str(self.current_local_path.absolute()), '')
+        if remote_tmp.startswith('\\') or remote_tmp.startswith('/'):
+            remote_tmp = remote_tmp[1:]
+        remote_tmp = os.path.join(self.remote_dir, remote_tmp)
+        return remote_tmp.replace(os.sep, posixpath.sep)
+
     def upload(self, target_path):
         for file in target_path.iterdir():
             if file.is_dir():
-                remote_tmp = str(file.absolute()).replace(str(self.current_local_path.absolute()), '')
-                if remote_tmp.startswith('\\') or remote_tmp.startswith('/'):
-                    remote_tmp = remote_tmp[1:]
-                remote_tmp = str(os.path.join(self.remote_dir, remote_tmp))
-                result = self.check_or_create_remote_dir(remote_tmp)
+                destination_path = self.destination_path(file)
+                result = self.check_or_create_remote_dir(destination_path)
                 print(result)
                 self.upload(file)
             else:
-
                 self.sender(self.session.pwd(), file)
 
 
@@ -159,16 +164,19 @@ def run_backup(_config):
 
 @click.command()
 @click.option(
-    "--config", prompt="Local or remote",
+    "--config", prompt=u.PROMPT_FTP,
     help="Where to upload files.",
     type=click.Choice(
-        ['local', 'remote'],
+        [d.name for d in u.ChoicesFtp],
         case_sensitive=False)
 )
 def destination_choice(config):
     click.echo(config)
-    print(f'Your choice: {config}')
-    run_backup(f'config_{config}.ini')
+    chosen = u.ChoicesFtp[config].value
+    print(chosen)
+
+    print(f'Your choice: {chosen}')
+    run_backup(f'config_{chosen}.json')
 
 
 if __name__ == '__main__':
@@ -177,4 +185,3 @@ if __name__ == '__main__':
     # _config = 'config_local.ini'
     print(f'Ci passo {_config}')
     run_backup(_config)
-

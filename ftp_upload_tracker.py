@@ -9,14 +9,16 @@ class FtpUploadTracker:
     def __init__(self, total_size, filename):
         self.total_size = total_size
         self.filename = filename
+        if len(filename) > 30:
+            self.filename = filename[:30] + '[...]'
         self.bar = tqdm(
-            desc=f'Uploading {filename[:30]}[...]',
+            desc='Uploading {:>35}'.format(self.filename[:35]),
             total=total_size,
-            unit='iB',
+            unit='B',
             unit_scale=True,
             unit_divisor=1024,
-            colour='green'
-            #  ncols=120,
+            colour='green',
+            ncols=120,
             # nrows=2,
         )
 

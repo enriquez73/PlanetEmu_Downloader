@@ -5,3 +5,4 @@ __pycache__/
 /.idea/sonarlint/issuestore/index.pb
 /log.txt
 *.ini
+config*.*

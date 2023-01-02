@@ -1,7 +1,8 @@
 import click
+from enum import Enum
 
 from planet_emu_spider import PlanetemuSpider
-from enum import Enum
+from utils import Choices, PROMPT
 
 
 WEB = 'https://www.planetemu.net'
@@ -31,6 +32,7 @@ PLANETEMU = [
     # 'panasonic-3do-interactive-multiplayer-games',  # No van en la raspberry PI
 ]
 
+
 def run_spider(rom):
     print(f'Downloading from {WEB} ...')
     print(f'Downloading Roms for {rom} ...')
@@ -40,21 +42,22 @@ def run_spider(rom):
     spider.get_games(prefix)
     spider.download_skipped_games()
 
-_prompt = f'Roms: \n{Planet.A.name} - {Planet.A.value}\n{Planet.B.name} - {Planet.B.value}\n'
+
+# _prompt = f'Roms: \n{Planet.A.name} - {Planet.A.value}\n{Planet.B.name} - {Planet.B.value}\n'
 
 @click.command()
 @click.option(
-    "--rom", prompt=_prompt,
+    "--rom", prompt=PROMPT,
     help="Where to upload files.",
     type=click.Choice(
-        [Planet.A.name, Planet.B.name],
+        [d.name for d in Choices],
         case_sensitive=False)
 )
 def destination_choice(rom):
     click.echo(rom)
-    choosed = Planet[rom].value
-    print(choosed)
-    run_spider(choosed)
+    chosen = Choices[rom].value
+    print(chosen)
+    run_spider(chosen)
 
 
 if __name__ == '__main__':
@@ -62,7 +65,7 @@ if __name__ == '__main__':
     # _config = 'config_remote.ini'
     # _config = 'config_local.ini'
     print(f'Ci passo {_config}')
-    run_backup(_config)
+    run_spider(_config)
 
 
 # if __name__ == '__main__':

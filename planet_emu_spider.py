@@ -125,7 +125,9 @@ class PlanetemuSpider(object):
         if not os.path.isfile(fname):
             total = int(response.headers.get('content-length', 0))
             # Can also replace 'file' with an io.BytesIO object
-            description = f'[({page_name}) - {idx:04d}/{games_number:04d}] - {name:20s}'
+            if len(name) > 30:
+                name = name[:30] + '[...]'
+            description = f'[({page_name}) - {idx:04d}/{games_number:04d}] - {name:>35s}'
             with open(fname, 'wb') as file, tqdm(
                     desc=description,
                     total=total,
