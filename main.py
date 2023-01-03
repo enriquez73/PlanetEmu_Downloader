@@ -6,31 +6,6 @@ from utils import Choices, PROMPT
 
 
 WEB = 'https://www.planetemu.net'
-class Planet(Enum):
-    A = 'nintendo-nintendo-entertainment-system'
-    B = 'mame-roms'
-
-PLANETEMU = [
-    # 'commodore-amiga-hardfiles-hdf',
-    # 'commodore-amiga-games-adf',
-    # 'atari-2600',
-    # 'atari-5200',
-    # 'atari-7800',
-    # 'coleco-colecovision',
-    # 'sega-game-gear',
-    # 'mattel-intellivision',
-    # 'atari-jaguar',
-    # 'atari-lynx',
-    # 'sega-master-system',
-    # 'sega-mega-drive',
-    # 'snk-neo-geo-pocket',
-    # 'snk-neo-geo-cd-world',
-    'nintendo-nintendo-entertainment-system',
-    'mame-roms',
-    # 'nec-pc-engine',
-    # 'sony-playstation-games-europe',
-    # 'panasonic-3do-interactive-multiplayer-games',  # No van en la raspberry PI
-]
 
 
 def run_spider(rom):

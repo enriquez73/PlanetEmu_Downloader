@@ -1,4 +1,5 @@
 from tqdm import tqdm
+from utils import Colors
 
 
 class FtpUploadTracker:
@@ -6,19 +7,24 @@ class FtpUploadTracker:
     total_size = 0
     last_shown_percent = 0
 
-    def __init__(self, total_size, filename):
+    def __init__(self, total_size, filename, position):
+        color = Colors[chr(position + 65)].value
         self.total_size = total_size
-        self.filename = filename
+        _filename = ''
         if len(filename) > 30:
-            self.filename = filename[:30] + '[...]'
+            _filename = f'{filename[:30]}[...]'
+        else:
+            _filename = f'{filename}'
         self.bar = tqdm(
-            desc='Uploading {:>35}'.format(self.filename[:35]),
+            desc='Uploading file: {:>35}'.format(_filename[:35]),
             total=total_size,
             unit='B',
             unit_scale=True,
             unit_divisor=1024,
-            colour='green',
-            ncols=120,
+            colour=color,
+            # ncols=120,
+            position=position,
+            leave=False
             # nrows=2,
         )
 

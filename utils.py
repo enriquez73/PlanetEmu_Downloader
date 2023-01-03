@@ -1,9 +1,11 @@
 import ssl
-
 import requests
 import os
+import json
+
 from bs4 import BeautifulSoup
 from aenum import Enum, extend_enum
+
 
 BASE_DIR = os.path.join('.', 'ROMS')
 
@@ -41,29 +43,11 @@ FTP_DESTINATION = [
     'local',
     'remote'
 ]
+PLANETEMU = []
 
-
-PLANETEMU = [
-    'commodore-amiga-hardfiles-hdf',
-    'commodore-amiga-games-adf',
-    'atari-2600',
-    'atari-5200',
-    'atari-7800',
-    'coleco-colecovision',
-    'sega-game-gear',
-    'mattel-intellivision',
-    'atari-jaguar',
-    'atari-lynx',
-    'sega-master-system',
-    'sega-mega-drive',
-    'snk-neo-geo-pocket',
-    'snk-neo-geo-cd-world',
-    'nintendo-nintendo-entertainment-system',
-    'mame-roms',
-    'nec-pc-engine',
-    'sony-playstation-games-europe',
-    'panasonic-3do-interactive-multiplayer-games',  # No van en la raspberry PI
-]
+with open('config.json', 'r') as f:
+    config = json.load(f)
+    PLANETEMU = config['PLANETEMU']
 
 PROMPT = f'Roms: \n'
 _PROMPT = [f'{chr(65 + idx)} - {value}\n' for idx, value in enumerate(PLANETEMU)]
@@ -91,3 +75,11 @@ class ChoicesFtp(Enum):
 
 for idx, value in enumerate(FTP_DESTINATION):
     extend_enum(ChoicesFtp, chr(65 + idx), value, '')
+
+
+class Colors(Enum):
+    A = 'YELLOW'
+    B = 'RED'
+    C = 'GREEN'
+    D = 'BLUE'
+    E = 'MAGENTA'

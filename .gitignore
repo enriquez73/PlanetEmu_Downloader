@@ -1,4 +1,6 @@
 /ROMS/
+/_ROMS/
+/UPLOADED/
 /.venv/
 /.idea/
 __pycache__/

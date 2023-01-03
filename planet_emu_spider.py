@@ -31,9 +31,34 @@ def create_directory(path):
         os.makedirs(path)
 
 
+def download_write(fname, games_number, idx, name, page_name, response, retry):
+    if not os.path.isfile(fname):
+        total = int(response.headers.get('content-length', 0))
+        # Can also replace 'file' with an io.BytesIO object
+        if retry > 0:
+            print('\r')
+        if len(name) > 30:
+            name = f'{name[:30]}[...]'
+        description = f'[({page_name}) - {idx:04d}/{games_number:04d}] - {name:>35s}'
+        with open(fname, 'wb') as file, tqdm(
+                desc=description,
+                total=total,
+                unit='iB',
+                unit_scale=True,
+                unit_divisor=1024,
+                #  ncols=120,
+                nrows=2,
+        ) as bar:
+            for data in response.iter_content(chunk_size=1024):
+                size = file.write(data)
+                bar.update(size)
+    else:
+        print(f'Skipping: [{page_name} - {idx:03d}-{games_number:03d}] - {name:15s}: Already downloaded')
+
+
 class PlanetemuSpider(object):
     def __init__(self, _web, _url, rom_name):
-        print('Initializing spider for %s' % rom_name)
+        print(f'Initializing spider for {rom_name}')
         self.base_url = _web
         self.rom_name = rom_name
         create_directory(u.urljoin(BASE_DIR, self.rom_name))
@@ -45,13 +70,19 @@ class PlanetemuSpider(object):
         self.skipped = []
         for tag in tags:
             href = tag.get('href', None)
-            if href and href.startswith(_url + '?page='):
-                if href not in self.pages:
-                    self.pages.append(href)
+            if (
+                href
+                and href.startswith(f'{_url}?page=')
+                and href not in self.pages
+            ):
+                self.pages.append(href)
 
     def get_games(self, prefix):
+        number_of_pages = len(self.pages)
+
         for page in self.pages:
-            page_name = page.split('=')[1]
+            page_name = 'Unique' if number_of_pages == 1 else page.split('=')[1]
+
             games = get_games_in_page(self.base_url, page, prefix)
             games_number = len(games)
             dest_path = os.path.join(BASE_DIR, self.rom_name, page_name)
@@ -80,68 +111,54 @@ class PlanetemuSpider(object):
     def download_game(self, game_url, idx, games_number, page_name=''):
         dest_path = os.path.join(BASE_DIR, self.rom_name, page_name)
         fname = ''
-        try:
-            s = Soup()
-            download_url = urljoin(self.base_url, game_url)
-            sopa = s(url=download_url)
-            action = sopa.find('form', {'name': 'MyForm'}).get('action')
-            _id = sopa.find('input', {'name': 'id'}).get('value')
-            download = sopa.find('input', {'name': 'download'}).get('value')
+        is_downloaded = False
+        retry_count = 0
+        while not is_downloaded:
+            if retry_count > 0:
+                print(f'\rRetry: [{retry_count}]', end='')
+            try:
+                s = Soup()
+                download_url = urljoin(self.base_url, game_url)
+                sopa = s(url=download_url)
+                action = sopa.find('form', {'name': 'MyForm'}).get('action')
+                _id = sopa.find('input', {'name': 'id'}).get('value')
+                download = sopa.find('input', {'name': 'download'}).get('value')
 
-            data = {
-                'id': _id,
-                'download': download,
-            }
-            form = self.base_url + action
-            with requests.post(form, data=data, verify=False, stream=True) as response:
-                response.raise_for_status()
-                content = response.headers.get('content-disposition')
+                data = {
+                    'id': _id,
+                    'download': download,
+                }
+                form = self.base_url + action
+                with requests.post(form, data=data, verify=False, stream=True) as response:
+                    response.raise_for_status()
+                    content = response.headers.get('content-disposition')
 
-                name = None
-                if content:
-                    name = re.findall("filename=(.+)", content)
-                    if name:
-                        name = name[0].replace('"', '')
+                    name = None
+                    if content:
+                        name = re.findall("filename=(.+)", content)
+                        if name:
+                            name = name[0].replace('"', '')
 
-                if not name:
-                    name = game_url.split('/')[-1] + '.zip'
+                    if not name:
+                        name = game_url.split('/')[-1] + '.zip'
 
-                fname = os.path.join(dest_path, name)
-                self.download_write(fname, games_number, idx, name, page_name, response)
-                return True
-        except KeyboardInterrupt:
-            if fname:
-                os.remove(fname)
-            return False
-        except Exception as e:
-            if fname:
-                os.remove(fname)
-            print(f'Skipping: ERROR {e}')
-            if download_url not in self.skipped:
-                self.skipped.append(download_url)
-            return True
-
-    def download_write(self, fname, games_number, idx, name, page_name, response):
-        if not os.path.isfile(fname):
-            total = int(response.headers.get('content-length', 0))
-            # Can also replace 'file' with an io.BytesIO object
-            if len(name) > 30:
-                name = name[:30] + '[...]'
-            description = f'[({page_name}) - {idx:04d}/{games_number:04d}] - {name:>35s}'
-            with open(fname, 'wb') as file, tqdm(
-                    desc=description,
-                    total=total,
-                    unit='iB',
-                    unit_scale=True,
-                    unit_divisor=1024,
-                    #  ncols=120,
-                    nrows=2,
-            ) as bar:
-                for data in response.iter_content(chunk_size=1024):
-                    size = file.write(data)
-                    bar.update(size)
-        else:
-            print(f'Skipping: [{page_name} - {idx:03d}-{games_number:03d}] - {name:15s}: Already downloaded')
+                    fname = os.path.join(dest_path, name)
+                    download_write(fname, games_number, idx, name, page_name, response, retry_count)
+                    is_downloaded = True
+            except KeyboardInterrupt:
+                if fname:
+                    os.remove(fname)
+                return False
+            except Exception as e:
+                if fname:
+                    os.remove(fname)
+                if 'ERROR 404' in str(e):
+                    print(f'ERROR {e} - skipping download')
+                    is_downloaded = True
+                retry_count += 1
+                # if download_url not in self.skipped:
+                #     self.skipped.append(download_url)
+        return is_downloaded
 
     # def __call__(self, _web, _url, _sufijo, path):
     #     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
